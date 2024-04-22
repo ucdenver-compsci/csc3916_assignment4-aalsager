@@ -102,10 +102,11 @@ router.route('/movies')
     .all(passport.authenticate('jwt', { session: false }))
     .get( function(req,res)  {
         const title = req.query.title
+
         if(req.query.reviews === 'true')
         {
             Movies.aggregate([
-                {$match: {title}},
+                {$match: title ? {title}: {}},
                 {
                     $lookup: {
                         from: 'reviews',
@@ -118,26 +119,26 @@ router.route('/movies')
                 if(err){
                     return res.status(500).json(JSON.stringify(err))
                 }else{
-                    res.json(result[0])
+                    res.json(result)
                 }
             })
             
         }else{
-            Movie.find({title}, (err,result) => {
+            Movie.find(title ? {title} : {}, (err,result) => {
                 console.log(err, result)
                 if(err){
                     res.status(500).json(JSON.stringify(err))
                 }else{
-                    res.json(result[0])
+                    res.json(result)
                 }
             })
         }
     })
     
-    .post( function(req,res) {
+    .post(function(req,res) {
         
         const json = req.body
-        const movie = new Movie({...json})
+        const movie = new Movie(json)
         movie.save((err) => {
             if(err){
                 res.status(500).json(JSON.stringify(err))
@@ -149,7 +150,7 @@ router.route('/movies')
 
     })
 
-    .delete(authController.isAuthenticated, (req, res) => {
+    .delete((req, res) => {
         console.log(req.body);
         res = res.status(200).json({
 
@@ -158,7 +159,7 @@ router.route('/movies')
             headers: req.headers,
             query: req.query,
             env: process.env.UNIQUE_KEY
-        });;
+        });
         if (req.get('Content-Type')) {
             res = res.type(req.get('Content-Type'));
         }
@@ -208,7 +209,6 @@ router.route("/reviews")
 })
 
 .all(function(req,res){
-
     res.status(405).json('Does not support the HTTP method');
 });
 
